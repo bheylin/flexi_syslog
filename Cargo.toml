@@ -1,0 +1,23 @@
+[package]
+name = "flexi_syslog"
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/ObsceneGiraffe/flexi_syslog"
+documentation = "https://docs.rs/flexi_syslog"
+homepage = "https://crates.io/crates/flexi_syslog"
+description = """
+A syslog writer for flexi_logger
+"""
+keywords = ["file", "logger"]
+categories = ["development-tools::debugging"]
+
+[dependencies]
+# bitflags = { version = "1.0", default_features = false }
+flexi_logger = { version = "0.20", default_features = false }
+libc = {version = "0.2" }
+log = { version = "0.4", features = ["std"] }
+
+[dev-dependencies]
+anyhow = { version = "1.0" }
