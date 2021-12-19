@@ -27,7 +27,7 @@ impl Writer {
         let ident = ffi::CString::new(ident.as_bytes())?;
 
         unsafe {
-            libc::openlog(ident.into_raw(), options.bits(), facility.into());
+            libc::openlog(ident.into_raw(), options.bits, facility.into());
         }
 
         Ok(Self {

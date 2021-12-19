@@ -10,12 +10,11 @@ homepage = "https://crates.io/crates/flexi_syslog"
 description = """
 A syslog writer for flexi_logger
 """
-keywords = ["file", "logger"]
+keywords = ["file", "logger", "syslog"]
 categories = ["development-tools::debugging"]
 
 [dependencies]
-# bitflags = { version = "1.0", default_features = false }
-flexi_logger = { version = "0.20", default_features = false }
+flexi_logger = { version = "0.22", default_features = false }
 libc = {version = "0.2" }
 log = { version = "0.4", features = ["std"] }
 

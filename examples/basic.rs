@@ -1,8 +1,3 @@
-A [flexi-logger](https://docs.rs/flexi_logger/0.22.0/flexi_logger/) [LogWriter](https://docs.rs/flexi_logger/0.22.0/flexi_logger/writers/trait.LogWriter.html) that writes to the [syslog](https://datatracker.ietf.org/doc/html/rfc5424) on the Unix family os operating systems.
-
-# Example Usage
-
-```rust
 use flexi_syslog::exe_name_from_env;
 
 use flexi_logger::Logger;
@@ -28,4 +23,3 @@ fn main() -> anyhow::Result<()> {
 
     Ok(())
 }
-```

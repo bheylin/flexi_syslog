@@ -3,7 +3,65 @@ use core::ops;
 
 #[derive(Clone, Copy, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct LogOption {
-    bits: libc::c_int,
+    pub bits: libc::c_int,
+}
+
+impl LogOption {
+    /// Write directly to system console if there is an error while sending to system logger.
+    pub const LOG_CONS: Self = Self {
+        bits: libc::LOG_CONS,
+    };
+
+    /// Open the connection immediately (normally, the connection is opened when the first message is logged).
+    pub const LOG_NDELAY: Self = Self {
+        bits: libc::LOG_NDELAY,
+    };
+
+    /// Don't wait for child processes that may have been created while logging the message.
+    /// The GNU C library does not create a child process, so this option has no effect on Linux.
+    pub const LOG_NOWAIT: Self = Self {
+        bits: libc::LOG_NOWAIT,
+    };
+
+    /// The converse of LOG_NDELAY; opening of the connection is delayed until syslog() is called.
+    /// This is the default, and need not be specified.
+    pub const LOG_ODELAY: Self = Self {
+        bits: libc::LOG_ODELAY,
+    };
+
+    /// Print to stderr as well. (Not in POSIX.1-2001 or POSIX.1-2008.)
+    pub const LOG_PERROR: Self = Self {
+        bits: libc::LOG_PERROR,
+    };
+
+    /// Include PID with each message.
+    pub const LOG_PID: Self = Self {
+        bits: libc::LOG_PID,
+    };
+
+    /// Returns `true` if no flags are currently stored.
+    #[inline]
+    pub const fn is_empty(&self) -> bool {
+        self.bits == 0
+    }
+
+    /// Returns `true` if any flags are currently stored.
+    #[inline]
+    pub const fn is_set(&self) -> bool {
+        self.bits != 0
+    }
+
+    #[inline]
+    pub const fn all() -> Self {
+        Self {
+            bits: Self::LOG_CONS.bits
+                | Self::LOG_NDELAY.bits
+                | Self::LOG_NOWAIT.bits
+                | Self::LOG_ODELAY.bits
+                | Self::LOG_PERROR.bits
+                | Self::LOG_PID.bits,
+        }
+    }
 }
 
 impl fmt::Display for LogOption {
@@ -61,52 +119,6 @@ impl fmt::LowerHex for LogOption {
 impl fmt::UpperHex for LogOption {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         fmt::UpperHex::fmt(&self.bits, f)
-    }
-}
-
-impl LogOption {
-    /// Write directly to system console if there is an error while sending to system logger.
-    pub const LOG_CONS: Self = Self {
-        bits: libc::LOG_CONS,
-    };
-
-    /// Open the connection immediately (normally, the connection is opened when the first message is logged).
-    pub const LOG_NDELAY: Self = Self {
-        bits: libc::LOG_NDELAY,
-    };
-
-    /// Don't wait for child processes that may have been created while logging the message.
-    /// The GNU C library does not create a child process, so this option has no effect on Linux.
-    pub const LOG_NOWAIT: Self = Self {
-        bits: libc::LOG_NOWAIT,
-    };
-
-    /// The converse of LOG_NDELAY; opening of the connection is delayed until syslog() is called.
-    /// This is the default, and need not be specified.
-    pub const LOG_ODELAY: Self = Self {
-        bits: libc::LOG_ODELAY,
-    };
-
-    /// Print to stderr as well. (Not in POSIX.1-2001 or POSIX.1-2008.)
-    pub const LOG_PERROR: Self = Self {
-        bits: libc::LOG_PERROR,
-    };
-
-    /// Include PID with each message.
-    pub const LOG_PID: Self = Self {
-        bits: libc::LOG_PID,
-    };
-
-    /// Returns `true` if no flags are currently stored.
-    #[inline]
-    pub const fn is_empty(&self) -> bool {
-        self.bits == 0
-    }
-
-    /// Returns `true` if any flags are currently stored.
-    #[inline]
-    pub const fn is_set(&self) -> bool {
-        self.bits != 0
     }
 }
 
@@ -209,10 +221,7 @@ mod test {
 
     #[test]
     fn should_display() {
-        assert_eq!(
-            &format!("{}", LogOption::LOG_CONS),
-            "LOG_CONS"
-        );
+        assert_eq!(&format!("{}", LogOption::LOG_CONS), "LOG_CONS");
 
         assert_eq!(
             &format!("{}", LogOption::LOG_CONS | LogOption::LOG_PID),
