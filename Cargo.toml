@@ -7,9 +7,7 @@ readme = "README.md"
 repository = "https://github.com/ObsceneGiraffe/flexi_syslog"
 documentation = "https://docs.rs/flexi_syslog"
 homepage = "https://crates.io/crates/flexi_syslog"
-description = """
-A syslog writer for flexi_logger
-"""
+description = "A syslog writer for flexi_logger"
 keywords = ["file", "logger", "syslog"]
 categories = ["development-tools::debugging"]
 
