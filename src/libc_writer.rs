@@ -58,12 +58,12 @@ impl LogWriter for Writer {
                     .unwrap();
 
                 unsafe {
-                    libc::syslog(severity.into(), s.as_ptr() as *const libc::c_char);
+                    libc::syslog(severity.into(), s.as_ptr().cast::<libc::c_char>());
                 }
                 buffer.clear();
             }
-            Err(_) => {
-                panic!();
+            Err(e) => {
+                panic!("{}", e.to_string());
             }
         });
 

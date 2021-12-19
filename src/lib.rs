@@ -1,3 +1,5 @@
+//! An implementation of a flexi_logger LogWriter that writes to syslog through the libc crate.
+
 mod libc_writer;
 mod log_option;
 
@@ -139,8 +141,7 @@ pub fn default_format(
         record
             .line()
             .as_ref()
-            .map(ToString::to_string)
-            .unwrap_or_else(|| "-".to_owned()),
+            .map_or_else(|| "-".to_owned(), ToString::to_string),
         record.args()
     )
 }
@@ -155,7 +156,7 @@ pub fn default_level_mapping(level: log::Level) -> Severity {
     }
 }
 
-///
+/// Return the executable name.
 pub fn exe_name_from_env() -> io::Result<String> {
     std::env::current_exe()?
         .file_name()
