@@ -1,4 +1,4 @@
-A [flexi-logger](https://docs.rs/flexi_logger/0.22.0/flexi_logger/) [LogWriter](https://docs.rs/flexi_logger/0.22.0/flexi_logger/writers/trait.LogWriter.html) that writes to the [syslog](https://datatracker.ietf.org/doc/html/rfc5424) on the Unix family os operating systems.
+A [flexi-logger](https://docs.rs/flexi_logger/0.22.0/flexi_logger/) [LogWriter](https://docs.rs/flexi_logger/0.22.0/flexi_logger/writers/trait.LogWriter.html) that writes to [syslog](https://datatracker.ietf.org/doc/html/rfc5424) on the Unix family of operating systems.
 
 # Example Usage
 
@@ -29,3 +29,5 @@ fn main() -> anyhow::Result<()> {
     Ok(())
 }
 ```
+
+The writer only supports libc for now.
