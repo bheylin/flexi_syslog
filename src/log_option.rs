@@ -1,7 +1,7 @@
 use core::fmt;
 use core::ops;
 
-#[derive(Clone, Copy, Hash, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Clone, Copy, Default, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct LogOption {
     pub bits: libc::c_int,
 }
@@ -38,6 +38,11 @@ impl LogOption {
     pub const LOG_PID: Self = Self {
         bits: libc::LOG_PID,
     };
+
+    #[inline]
+    pub const fn empty() -> Self {
+        Self { bits: 0 }
+    }
 
     /// Returns `true` if no flags are currently stored.
     #[inline]

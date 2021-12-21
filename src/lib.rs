@@ -7,7 +7,7 @@ use core::cell::RefCell;
 use flexi_logger::{DeferredNow, Record};
 use std::io;
 
-pub use libc_writer::Writer as LibcWriter;
+pub use libc_writer::{Builder, Writer as LibcWriter};
 pub use log_option::LogOption;
 
 /// Signature for a custom mapping function that maps the rust log levels to
@@ -61,6 +61,11 @@ pub enum Facility {
     Local7,
 }
 
+impl Default for Facility {
+    fn default() -> Self {
+        Self::UserLevel
+    }
+}
 impl From<Facility> for libc::c_int {
     fn from(f: Facility) -> Self {
         match f {
