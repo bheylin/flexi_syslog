@@ -1,4 +1,9 @@
 //! An implementation of a flexi_logger LogWriter that writes to syslog through the libc crate.
+#![deny(future_incompatible)]
+#![deny(nonstandard_style)]
+#![deny(rust_2021_compatibility)]
+#![deny(unused)]
+#![deny(warnings)]
 
 mod libc_writer;
 mod log_option;

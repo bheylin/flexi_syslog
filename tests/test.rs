@@ -1,7 +1,9 @@
+use std::io;
+
 use flexi_syslog as syslog;
 use flexi_syslog::exe_name_from_env;
 
-pub fn default_builder() -> anyhow::Result<syslog::Builder> {
+pub fn default_builder() -> io::Result<syslog::Builder> {
     Ok(syslog::Builder::new()
         .ident(exe_name_from_env()?)
         .facility(syslog::Facility::Local0)

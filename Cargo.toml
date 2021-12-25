@@ -18,4 +18,3 @@ log = { version = "0.4", features = ["std"] }
 
 [dev-dependencies]
 anyhow = { version = "1.0" }
-serial_test = {version = "0.5" }
