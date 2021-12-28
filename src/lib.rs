@@ -1,22 +1,41 @@
 //! An implementation of a flexi_logger LogWriter that writes to syslog through the libc crate.
-#![deny(future_incompatible)]
-#![deny(nonstandard_style)]
-#![deny(rust_2021_compatibility)]
-#![deny(unused)]
-#![deny(warnings)]
+// #![deny(future_incompatible)]
+// #![deny(nonstandard_style)]
+// #![deny(rust_2021_compatibility)]
+// #![deny(unused)]
+// #![deny(warnings)]
 
-mod writer;
+pub mod log_writer;
 
 use core::cell::RefCell;
 use std::io;
 
+use flexi_logger::{DeferredNow, Record};
 use syslog::Severity;
 
-pub use writer::{Builder, Writer};
+pub use log_writer::LogWriter;
 
 /// Signature for a custom mapping function that maps the rust log levels to
 /// values of the syslog Severity.
 pub type LevelToSeverity = fn(level: log::Level) -> Severity;
+
+/// A default formatter if you don't want to think to hard about it
+/// {record.level} {record.target} l:{record.line} {record.args}
+pub fn default_format(
+    w: &mut dyn io::Write,
+    _now: &mut DeferredNow,
+    record: &Record,
+) -> Result<(), io::Error> {
+    write!(
+        w,
+        "l:{} {}",
+        record
+            .line()
+            .as_ref()
+            .map_or_else(|| "-".to_owned(), ToString::to_string),
+        record.args()
+    )
+}
 
 /// A default mapping from [log::Level] to [Severity]
 pub fn default_level_mapping(level: log::Level) -> Severity {
@@ -41,12 +60,12 @@ pub fn exe_name_from_env() -> io::Result<String> {
 // Thread-local buffer
 pub(crate) fn buffer_with<F>(f: F)
 where
-    F: FnOnce(&RefCell<String>),
+    F: FnOnce(&RefCell<Vec<u8>>),
 {
     const DEFAULT_BUFFER_BYTES: usize = 2 * 1024;
 
     thread_local! {
-        static BUFFER: RefCell<String> = RefCell::new(String::with_capacity(DEFAULT_BUFFER_BYTES));
+        static BUFFER: RefCell<Vec<u8>> = RefCell::new(Vec::with_capacity(DEFAULT_BUFFER_BYTES));
     }
     BUFFER.with(f);
 }
