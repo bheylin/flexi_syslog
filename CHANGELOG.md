@@ -2,6 +2,10 @@
 
 # [Unreleased]
 
+# [0.2.1] - 2021-12-30
+
+* Changed example in the readme to a the working 0.2.0 `example/basic.rs`
+
 # [0.2.0] - 2021-12-29
 
 This release makes breaking changes to the API!
