@@ -1,9 +1,9 @@
-//! An implementation of a flexi_logger LogWriter that writes to syslog through the libc crate.
-// #![deny(future_incompatible)]
-// #![deny(nonstandard_style)]
-// #![deny(rust_2021_compatibility)]
-// #![deny(unused)]
-// #![deny(warnings)]
+//! A flexi-logger LogWriter that formats and transports log records to the syslog using the syslog crate.
+#![deny(future_incompatible)]
+#![deny(nonstandard_style)]
+#![deny(rust_2021_compatibility)]
+#![deny(unused)]
+#![deny(warnings)]
 
 pub mod log_writer;
 
@@ -19,8 +19,8 @@ pub use log_writer::LogWriter;
 /// values of the syslog Severity.
 pub type LevelToSeverity = fn(level: log::Level) -> Severity;
 
-/// A default formatter if you don't want to think to hard about it
-/// {record.level} {record.target} l:{record.line} {record.args}
+/// A default formatter if you don't want to think to hard about it.
+/// Format: {record.level} {record.target} l:{record.line} {record.args}
 pub fn default_format(
     w: &mut dyn io::Write,
     _now: &mut DeferredNow,
@@ -28,7 +28,9 @@ pub fn default_format(
 ) -> Result<(), io::Error> {
     write!(
         w,
-        "l:{} {}",
+        "{} {} l:{} {}",
+        record.level(),
+        record.target(),
         record
             .line()
             .as_ref()

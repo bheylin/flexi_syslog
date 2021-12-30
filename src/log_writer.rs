@@ -1,3 +1,5 @@
+//! The LogWriter that adapts flexi-logger log records to the syslog.
+use std::fmt;
 use std::io;
 use std::str;
 use std::sync::{Arc, Mutex};
@@ -16,25 +18,42 @@ pub struct LogWriter<Backend>
 where
     Backend: io::Write + Send + Sync,
 {
-    /// Fn that maps [log::Level] to [crate::Severity].
-    level_to_severity: LevelToSeverity,
+    /// backend for sending syslog messages
+    backend: Arc<Mutex<Backend>>,
     /// Fn to format a single [Record] into the message section of a syslog entry.
     format_fn: FormatFunction,
     /// Formats the syslog entry including metadata and user message
     formatter: syslog::Formatter3164,
-    /// backend for sending syslog messages
-    backend: Arc<Mutex<Backend>>,
+    /// Fn that maps [log::Level] to [crate::Severity].
+    level_to_severity: LevelToSeverity,
     /// if defined truncate the bytes sent to the bacnend to be at most this max.
     max_bytes: Option<usize>,
     /// The maximum log level to allow through to syslog.
     max_log_level: log::LevelFilter,
 }
 
+impl<Backend> fmt::Debug for LogWriter<Backend>
+where
+    Backend: io::Write + Send + Sync,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("LogWriter")
+            .field("formatter", &self.formatter)
+            .field("max_bytes", &self.max_bytes)
+            .field("max_log_level", &self.max_log_level)
+            .finish()
+    }
+}
+
 /// Builds a Writer.
 pub struct Builder {
+    /// Fn to format a single [Record] into the message section of a syslog entry.
     format_fn: FormatFunction,
+    /// Fn that maps [log::Level] to [crate::Severity].
     level_to_severity: LevelToSeverity,
+    /// if defined truncate the bytes sent to the bacnend to be at most this max.
     max_bytes: Option<usize>,
+    /// The maximum log level to allow through to syslog.
     max_log_level: log::LevelFilter,
 }
 
@@ -46,6 +65,15 @@ impl Default for Builder {
             max_bytes: None,
             max_log_level: log::LevelFilter::Info,
         }
+    }
+}
+
+impl fmt::Debug for Builder {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Builder")
+            .field("max_bytes", &self.max_bytes)
+            .field("max_log_level", &self.max_log_level)
+            .finish()
     }
 }
 
@@ -70,7 +98,7 @@ impl Builder {
         self
     }
 
-    /// Consume Builder into a Writer
+    /// Consume Builder into a Writer backed by the given syslog logger.
     pub fn build<Backend>(
         self,
         logger: syslog::Logger<Backend, syslog::Formatter3164>,

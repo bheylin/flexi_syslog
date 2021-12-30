@@ -9,7 +9,7 @@ A [flexi-logger](https://docs.rs/flexi_logger/0.22.0/flexi_logger/) [LogWriter](
 ```toml
 [dependencies]
 flexi_logger = "0.22"
-flexi_syslog = "0.1.0"
+flexi_syslog = "0.2"
 syslog = "6.0"
 ```
 
