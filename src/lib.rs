@@ -1,7 +1,11 @@
 //! A flexi-logger LogWriter that formats and transports log records to the syslog using the syslog crate.
+#![allow(rustdoc::private_intra_doc_links)]
 #![deny(future_incompatible)]
+#![deny(missing_debug_implementations)]
 #![deny(nonstandard_style)]
 #![deny(rust_2021_compatibility)]
+#![deny(rustdoc::broken_intra_doc_links)]
+#![deny(unsafe_code)]
 #![deny(unused)]
 #![deny(warnings)]
 
