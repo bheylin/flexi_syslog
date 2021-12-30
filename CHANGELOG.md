@@ -2,6 +2,12 @@
 
 # [Unreleased]
 
+# [0.2.2] - 2021-12-30
+
+* Added compiler lints
+* Added more documentation
+* Changed default_format fn to the documented format.
+
 # [0.2.1] - 2021-12-30
 
 * Changed example in the readme to a the working 0.2.0 `example/basic.rs`
