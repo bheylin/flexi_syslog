@@ -2,6 +2,13 @@
 
 # [Unreleased]
 
+# [0.3.0] - 2022-01-18
+
+This release makes breaking changes to the API!
+
+* Changed the hard coded formatter to the syslog 5424 standard.
+* Changed the `Builder::build` signiture to take a `syslog::Formatter5424`.
+
 # [0.2.2] - 2021-12-30
 
 * Added compiler lints

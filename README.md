@@ -17,7 +17,7 @@ syslog = "6.0"
 
 ```rust
 fn main() {
-    let formatter = syslog::Formatter3164 {
+    let formatter = syslog::Formatter5424 {
         facility: syslog::Facility::LOG_USER,
         hostname: None,
         process: "basic".into(),
