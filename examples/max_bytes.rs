@@ -1,5 +1,5 @@
 fn main() {
-    let formatter = syslog::Formatter3164 {
+    let formatter = syslog::Formatter5424 {
         facility: syslog::Facility::LOG_USER,
         hostname: None,
         process: "basic".into(),
@@ -8,7 +8,7 @@ fn main() {
 
     let sys_logger = syslog::unix(formatter).expect("Failed to init unix socket");
     let writer = flexi_syslog::log_writer::Builder::default()
-        .max_bytes(35)
+        .max_bytes(50)
         .build(sys_logger);
 
     let logger = flexi_logger::Logger::try_with_str("info")

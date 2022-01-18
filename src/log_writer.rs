@@ -5,7 +5,6 @@ use std::str;
 use std::sync::{Arc, Mutex};
 
 use flexi_logger::{DeferredNow, FormatFunction, Record};
-use syslog::LogFormat;
 
 use crate::{buffer_with, LevelToSeverity};
 
@@ -23,7 +22,7 @@ where
     /// Fn to format a single [Record] into the message section of a syslog entry.
     format_fn: FormatFunction,
     /// Formats the syslog entry including metadata and user message
-    formatter: syslog::Formatter3164,
+    formatter: syslog::Formatter5424,
     /// Fn that maps [log::Level] to [crate::Severity].
     level_to_severity: LevelToSeverity,
     /// if defined truncate the bytes sent to the bacnend to be at most this max.
@@ -101,7 +100,7 @@ impl Builder {
     /// Consume Builder into a Writer backed by the given syslog logger.
     pub fn build<Backend>(
         self,
-        logger: syslog::Logger<Backend, syslog::Formatter3164>,
+        logger: syslog::Logger<Backend, syslog::Formatter5424>,
     ) -> LogWriter<Backend>
     where
         Backend: io::Write + Send + Sync,
@@ -127,7 +126,7 @@ where
         level_to_severity: LevelToSeverity,
         max_bytes: impl Into<Option<usize>>,
         max_log_level: log::LevelFilter,
-        formatter: syslog::Formatter3164,
+        formatter: syslog::Formatter5424,
         backend: Backend,
     ) -> Self {
         Self {
@@ -146,6 +145,8 @@ where
     Backend: io::Write + Send + Sync,
 {
     fn write(&self, now: &mut DeferredNow, record: &Record) -> io::Result<()> {
+        use syslog::LogFormat;
+
         let severity = (self.level_to_severity)(record.level());
 
         buffer_with(|tl_bytes| match tl_bytes.try_borrow_mut() {
@@ -168,8 +169,10 @@ where
                     .lock()
                     .expect("Failed to lock syslog backend Mutex");
 
+                let data = std::collections::HashMap::default();
+
                 self.formatter
-                    .format(&mut *backend, severity, s)
+                    .format(&mut *backend, severity, (0, data, s))
                     .expect("Failed to format message");
 
                 bytes.clear();
