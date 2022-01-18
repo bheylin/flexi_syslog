@@ -5,8 +5,13 @@ use std::str;
 use std::sync::{Arc, Mutex};
 
 use flexi_logger::{DeferredNow, FormatFunction, Record};
+use time::{format_description::FormatItem, macros::format_description};
 
 use crate::{buffer_with, LevelToSeverity};
+
+pub const TIME_FORMAT_ISO_8601: &[FormatItem<'static>] = format_description!(
+    "[year]-[month]-[day]T[hour]:[minute]:[second].[subsecond digits:6][offset_hour sign:mandatory]:[offset_minute]"
+);
 
 /// Writes [records](flexi_logger::Record) to the given syslog [backend](syslog::LoggerBackend).
 ///
@@ -22,7 +27,7 @@ where
     /// Fn to format a single [Record] into the message section of a syslog entry.
     format_fn: FormatFunction,
     /// Formats the syslog entry including metadata and user message
-    formatter: syslog::Formatter5424,
+    formatter: Formatter5424,
     /// Fn that maps [log::Level] to [crate::Severity].
     level_to_severity: LevelToSeverity,
     /// if defined truncate the bytes sent to the bacnend to be at most this max.
@@ -100,7 +105,7 @@ impl Builder {
     /// Consume Builder into a Writer backed by the given syslog logger.
     pub fn build<Backend>(
         self,
-        logger: syslog::Logger<Backend, syslog::Formatter5424>,
+        logger: syslog::Logger<Backend, Formatter5424>,
     ) -> LogWriter<Backend>
     where
         Backend: io::Write + Send + Sync,
@@ -126,7 +131,7 @@ where
         level_to_severity: LevelToSeverity,
         max_bytes: impl Into<Option<usize>>,
         max_log_level: log::LevelFilter,
-        formatter: syslog::Formatter5424,
+        formatter: Formatter5424,
         backend: Backend,
     ) -> Self {
         Self {
@@ -169,10 +174,8 @@ where
                     .lock()
                     .expect("Failed to lock syslog backend Mutex");
 
-                let data = std::collections::HashMap::default();
-
                 self.formatter
-                    .format(&mut *backend, severity, (0, data, s))
+                    .format(&mut *backend, severity, s)
                     .expect("Failed to format message");
 
                 bytes.clear();
@@ -256,6 +259,61 @@ fn find_char_boundary_from_end(buf: &[u8]) -> usize {
 
 fn is_char_boundary(b: u8) -> bool {
     b as i8 >= -0x40
+}
+
+#[derive(Clone, Debug)]
+pub struct Formatter5424 {
+    pub facility: syslog::Facility,
+    pub hostname: Option<String>,
+    pub process: String,
+    pub pid: u32,
+}
+
+impl<T: fmt::Display> syslog::LogFormat<T> for Formatter5424 {
+    fn format<W: io::Write>(
+        &self,
+        w: &mut W,
+        severity: syslog::Severity,
+        log_message: T,
+    ) -> Result<(), syslog::Error> {
+        let s = format!(
+            "<{}>1 {} {} {} {} 0 - {}", // v1
+            encode_priority(severity, self.facility),
+            time::OffsetDateTime::now_utc()
+                .format(&TIME_FORMAT_ISO_8601)
+                .unwrap(),
+            self.hostname
+                .as_ref()
+                .map(|x| &x[..])
+                .unwrap_or("localhost"),
+            self.process,
+            self.pid,
+            log_message
+        );
+
+        dbg!(s);
+
+        write!(
+            w,
+            "<{}>1 {} {} {} {} 0 - {}", // v1
+            encode_priority(severity, self.facility),
+            time::OffsetDateTime::now_utc()
+                .format(&TIME_FORMAT_ISO_8601)
+                .unwrap(),
+            self.hostname
+                .as_ref()
+                .map(|x| &x[..])
+                .unwrap_or("localhost"),
+            self.process,
+            self.pid,
+            log_message
+        )
+        .map_err(|e| syslog::Error::with_chain(e, syslog::ErrorKind::Format))
+    }
+}
+
+fn encode_priority(severity: syslog::Severity, facility: syslog::Facility) -> syslog::Priority {
+    facility as u8 | severity as u8
 }
 
 #[cfg(test)]

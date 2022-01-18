@@ -2,6 +2,10 @@
 
 # [Unreleased]
 
+* Added a custom Formatter5424 that implements the timestamp correctly with 6 fractional digits.
+* Added `time` crate to allow formatting timestamp correclty.
+* Changed the `Builder::build` signiture to take a `flexi_syslog::Formatter5424`.
+
 # [0.3.0] - 2022-01-18
 
 This release makes breaking changes to the API!

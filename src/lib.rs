@@ -17,7 +17,7 @@ use std::io;
 use flexi_logger::{DeferredNow, Record};
 use syslog::Severity;
 
-pub use log_writer::LogWriter;
+pub use log_writer::{Formatter5424, LogWriter};
 
 /// Signature for a custom mapping function that maps the rust log levels to
 /// values of the syslog Severity.

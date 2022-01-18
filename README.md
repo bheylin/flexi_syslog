@@ -17,7 +17,8 @@ syslog = "6.0"
 
 ```rust
 fn main() {
-    let formatter = syslog::Formatter5424 {
+    // syslog's Formatter5424 does not implement the rfc5424 timestamp correctly
+    let formatter = flexi_syslog::Formatter5424 {
         facility: syslog::Facility::LOG_USER,
         hostname: None,
         process: "basic".into(),
