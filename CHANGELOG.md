@@ -2,6 +2,10 @@
 
 # [Unreleased]
 
+* Added lints to the clippy script to avoid submitting debug code in future.
+* Added doc comment to custom time format.
+* Removed dbg! code.
+
 # [0.4.0] - 2022-01-18
 
 This release makes breaking changes to the API!

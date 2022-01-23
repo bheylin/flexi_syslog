@@ -9,6 +9,39 @@ use time::{format_description::FormatItem, macros::format_description};
 
 use crate::{buffer_with, LevelToSeverity};
 
+/// Excerpt from RFC 5424:
+///
+/// The TIMESTAMP field is a formalized timestamp derived from [RFC3339].
+///
+///    Whereas [RFC3339] makes allowances for multiple syntaxes, this
+///    document imposes further restrictions.  The TIMESTAMP value MUST
+///    follow these restrictions:
+///
+///    o  The "T" and "Z" characters in this syntax MUST be upper case.
+///
+///    o  Usage of the "T" character is REQUIRED.
+///
+///    o  Leap seconds MUST NOT be used.
+///
+/// ==============================================================
+///
+/// An excert of the ABNF format from section 6.
+///
+/// TIMESTAMP       = NILVALUE / FULL-DATE "T" FULL-TIME
+/// FULL-DATE       = DATE-FULLYEAR "-" DATE-MONTH "-" DATE-MDAY
+/// DATE-FULLYEAR   = 4DIGIT
+/// DATE-MONTH      = 2DIGIT  ; 01-12
+/// DATE-MDAY       = 2DIGIT  ; 01-28, 01-29, 01-30, 01-31 based on
+///                         ; month/year
+/// FULL-TIME       = PARTIAL-TIME TIME-OFFSET
+/// PARTIAL-TIME    = TIME-HOUR ":" TIME-MINUTE ":" TIME-SECOND
+///                 [TIME-SECFRAC]
+/// TIME-HOUR       = 2DIGIT  ; 00-23
+/// TIME-MINUTE     = 2DIGIT  ; 00-59
+/// TIME-SECOND     = 2DIGIT  ; 00-59
+/// TIME-SECFRAC    = "." 1*6DIGIT
+/// TIME-OFFSET     = "Z" / TIME-NUMOFFSET
+/// TIME-NUMOFFSET  = ("+" / "-") TIME-HOUR ":" TIME-MINUTE
 pub const TIME_FORMAT_ISO_8601: &[FormatItem<'static>] = format_description!(
     "[year]-[month]-[day]T[hour]:[minute]:[second].[subsecond digits:6][offset_hour sign:mandatory]:[offset_minute]"
 );
@@ -257,6 +290,7 @@ fn find_char_boundary_from_end(buf: &[u8]) -> usize {
     }
 }
 
+#[allow(clippy::cast_possible_wrap)]
 fn is_char_boundary(b: u8) -> bool {
     b as i8 >= -0x40
 }
@@ -276,34 +310,14 @@ impl<T: fmt::Display> syslog::LogFormat<T> for Formatter5424 {
         severity: syslog::Severity,
         log_message: T,
     ) -> Result<(), syslog::Error> {
-        let s = format!(
-            "<{}>1 {} {} {} {} 0 - {}", // v1
-            encode_priority(severity, self.facility),
-            time::OffsetDateTime::now_utc()
-                .format(&TIME_FORMAT_ISO_8601)
-                .unwrap(),
-            self.hostname
-                .as_ref()
-                .map(|x| &x[..])
-                .unwrap_or("localhost"),
-            self.process,
-            self.pid,
-            log_message
-        );
-
-        dbg!(s);
-
         write!(
             w,
             "<{}>1 {} {} {} {} 0 - {}", // v1
             encode_priority(severity, self.facility),
             time::OffsetDateTime::now_utc()
                 .format(&TIME_FORMAT_ISO_8601)
-                .unwrap(),
-            self.hostname
-                .as_ref()
-                .map(|x| &x[..])
-                .unwrap_or("localhost"),
+                .expect("Format is valid and tested"),
+            self.hostname.as_ref().map_or("localhost", |x| &x[..]),
             self.process,
             self.pid,
             log_message
