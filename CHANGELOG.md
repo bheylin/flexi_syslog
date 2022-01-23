@@ -2,6 +2,8 @@
 
 # [Unreleased]
 
+# [0.4.1] - 2022-01-23
+
 * Added lints to the clippy script to avoid submitting debug code in future.
 * Added doc comment to custom time format.
 * Removed dbg! code.
