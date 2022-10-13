@@ -4,47 +4,10 @@ use std::io;
 use std::str;
 use std::sync::{Arc, Mutex};
 
+use chrono::{Local, SecondsFormat};
 use flexi_logger::{DeferredNow, FormatFunction, Record};
-use time::{format_description::FormatItem, macros::format_description};
 
 use crate::{buffer_with, LevelToSeverity};
-
-/// Excerpt from RFC 5424:
-///
-/// The TIMESTAMP field is a formalized timestamp derived from [RFC3339].
-///
-///    Whereas [RFC3339] makes allowances for multiple syntaxes, this
-///    document imposes further restrictions.  The TIMESTAMP value MUST
-///    follow these restrictions:
-///
-///    o  The "T" and "Z" characters in this syntax MUST be upper case.
-///
-///    o  Usage of the "T" character is REQUIRED.
-///
-///    o  Leap seconds MUST NOT be used.
-///
-/// ==============================================================
-///
-/// An excert of the ABNF format from section 6.
-///
-/// TIMESTAMP       = NILVALUE / FULL-DATE "T" FULL-TIME
-/// FULL-DATE       = DATE-FULLYEAR "-" DATE-MONTH "-" DATE-MDAY
-/// DATE-FULLYEAR   = 4DIGIT
-/// DATE-MONTH      = 2DIGIT  ; 01-12
-/// DATE-MDAY       = 2DIGIT  ; 01-28, 01-29, 01-30, 01-31 based on
-///                         ; month/year
-/// FULL-TIME       = PARTIAL-TIME TIME-OFFSET
-/// PARTIAL-TIME    = TIME-HOUR ":" TIME-MINUTE ":" TIME-SECOND
-///                 [TIME-SECFRAC]
-/// TIME-HOUR       = 2DIGIT  ; 00-23
-/// TIME-MINUTE     = 2DIGIT  ; 00-59
-/// TIME-SECOND     = 2DIGIT  ; 00-59
-/// TIME-SECFRAC    = "." 1*6DIGIT
-/// TIME-OFFSET     = "Z" / TIME-NUMOFFSET
-/// TIME-NUMOFFSET  = ("+" / "-") TIME-HOUR ":" TIME-MINUTE
-pub const TIME_FORMAT_ISO_8601: &[FormatItem<'static>] = format_description!(
-    "[year]-[month]-[day]T[hour]:[minute]:[second].[subsecond digits:6][offset_hour sign:mandatory]:[offset_minute]"
-);
 
 /// Writes [records](flexi_logger::Record) to the given syslog [backend](syslog::LoggerBackend).
 ///
@@ -191,30 +154,43 @@ where
             Ok(mut bytes) => {
                 bytes.clear();
 
-                if let Some(max_bytes) = self.max_bytes {
+                let result = if let Some(max_bytes) = self.max_bytes {
                     let mut byte_writer = MaxByteWriter::new(&mut *bytes, max_bytes);
                     (self.format_fn)(&mut byte_writer, now, record)
                 } else {
                     (self.format_fn)(&mut *bytes, now, record)
+                };
+
+                if let Err(e) = result {
+                    log::error!("Failed to format flexi_logger::Record; {e}");
+                    return;
                 }
-                .expect("Failed to format flexi_logger::Record");
 
-                let s = str::from_utf8(&*bytes)
-                    .expect("Failed to convert message bytes into valid str");
+                let s = if let Ok(s) = str::from_utf8(&*bytes) {
+                    s
+                } else {
+                    log::error!("Failed to convert message bytes into valid str");
+                    return;
+                };
 
-                let mut backend = self
-                    .backend
-                    .lock()
-                    .expect("Failed to lock syslog backend Mutex");
+                let mut backend = if let Ok(l) = self.backend.lock() {
+                    l
+                } else {
+                    log::error!("Failed to lock syslog backend Mutex");
+                    return;
+                };
 
-                self.formatter
-                    .format(&mut *backend, severity, s)
-                    .expect("Failed to format message");
+                let result = self.formatter.format(&mut *backend, severity, s);
+
+                if let Err(e) = result {
+                    log::error!("Failed to format message; {e}");
+                    return;
+                }
 
                 bytes.clear();
             }
             Err(e) => {
-                panic!("{}", e.to_string());
+                log::error!("{e}");
             }
         });
 
@@ -310,13 +286,47 @@ impl<T: fmt::Display> syslog::LogFormat<T> for Formatter5424 {
         severity: syslog::Severity,
         log_message: T,
     ) -> Result<(), syslog::Error> {
+        // Excerpt from RFC 5424:
+        //
+        // The TIMESTAMP field is a formalized timestamp derived from [RFC3339].
+        //
+        //    Whereas [RFC3339] makes allowances for multiple syntaxes, this
+        //    document imposes further restrictions.  The TIMESTAMP value MUST
+        //    follow these restrictions:
+        //
+        //    o  The "T" and "Z" characters in this syntax MUST be upper case.
+        //
+        //    o  Usage of the "T" character is REQUIRED.
+        //
+        //    o  Leap seconds MUST NOT be used.
+        //
+        // ==============================================================
+        //
+        // An excert of the ABNF format from section 6.
+        //
+        // TIMESTAMP       = NILVALUE / FULL-DATE "T" FULL-TIME
+        // FULL-DATE       = DATE-FULLYEAR "-" DATE-MONTH "-" DATE-MDAY
+        // DATE-FULLYEAR   = 4DIGIT
+        // DATE-MONTH      = 2DIGIT  ; 01-12
+        // DATE-MDAY       = 2DIGIT  ; 01-28, 01-29, 01-30, 01-31 based on
+        //                         ; month/year
+        // FULL-TIME       = PARTIAL-TIME TIME-OFFSET
+        // PARTIAL-TIME    = TIME-HOUR ":" TIME-MINUTE ":" TIME-SECOND
+        //                 [TIME-SECFRAC]
+        // TIME-HOUR       = 2DIGIT  ; 00-23
+        // TIME-MINUTE     = 2DIGIT  ; 00-59
+        // TIME-SECOND     = 2DIGIT  ; 00-59
+        // TIME-SECFRAC    = "." 1*6DIGIT
+        // TIME-OFFSET     = "Z" / TIME-NUMOFFSET
+        // TIME-NUMOFFSET  = ("+" / "-") TIME-HOUR ":" TIME-MINUTE
+        let use_z = true;
+        let time = Local::now().to_rfc3339_opts(SecondsFormat::Micros, use_z);
+
         write!(
             w,
             "<{}>1 {} {} {} {} 0 - {}", // v1
             encode_priority(severity, self.facility),
-            time::OffsetDateTime::now_utc()
-                .format(&TIME_FORMAT_ISO_8601)
-                .expect("Format is valid and tested"),
+            time,
             self.hostname.as_ref().map_or("localhost", |x| &x[..]),
             self.process,
             self.pid,
