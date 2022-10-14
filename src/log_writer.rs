@@ -158,7 +158,7 @@ where
             let mut bytes = match tl_bytes.try_borrow_mut() {
                 Ok(b) => b,
                 Err(e) => {
-                    log::error!("{e}");
+                    eprintln!("{e}");
                     return;
                 }
             };
@@ -173,28 +173,28 @@ where
             };
 
             if let Err(e) = result {
-                log::error!("Failed to format flexi_logger::Record; {e}");
+                eprintln!("Failed to format flexi_logger::Record; error: {e}");
                 return;
             }
 
-            let s = if let Ok(s) = str::from_utf8(&*bytes) {
-                s
-            } else {
-                log::error!("Failed to convert message bytes into valid str");
-                return;
+            let s = match str::from_utf8(&*bytes) {
+                Ok(s) => s,
+                Err(e) => {
+                    eprintln!("Failed to convert message bytes into valid str; error: {e}");
+                    return;
+                }
             };
 
-            let mut backend = if let Ok(l) = self.backend.lock() {
-                l
-            } else {
-                log::error!("Failed to lock syslog backend Mutex");
-                return;
+            let mut backend = match self.backend.lock() {
+                Ok(l) => l,
+                Err(e) => {
+                    eprintln!("Failed to lock backend Mutex while trying to log message; message: {s}, error: {e}");
+                    return;
+                }
             };
 
-            let result = self.formatter.format(&mut *backend, severity, s);
-
-            if let Err(e) = result {
-                log::error!("Failed to format message; {e}");
+            if let Err(e) = self.formatter.format(&mut *backend, severity, s) {
+                eprintln!("Failed to write message to syslog backend; {e}");
                 return;
             }
 
@@ -293,39 +293,6 @@ impl<T: fmt::Display> syslog::LogFormat<T> for Formatter5424 {
         severity: syslog::Severity,
         log_message: T,
     ) -> Result<(), syslog::Error> {
-        // Excerpt from RFC 5424:
-        //
-        // The TIMESTAMP field is a formalized timestamp derived from [RFC3339].
-        //
-        //    Whereas [RFC3339] makes allowances for multiple syntaxes, this
-        //    document imposes further restrictions.  The TIMESTAMP value MUST
-        //    follow these restrictions:
-        //
-        //    o  The "T" and "Z" characters in this syntax MUST be upper case.
-        //
-        //    o  Usage of the "T" character is REQUIRED.
-        //
-        //    o  Leap seconds MUST NOT be used.
-        //
-        // ==============================================================
-        //
-        // An excert of the ABNF format from section 6.
-        //
-        // TIMESTAMP       = NILVALUE / FULL-DATE "T" FULL-TIME
-        // FULL-DATE       = DATE-FULLYEAR "-" DATE-MONTH "-" DATE-MDAY
-        // DATE-FULLYEAR   = 4DIGIT
-        // DATE-MONTH      = 2DIGIT  ; 01-12
-        // DATE-MDAY       = 2DIGIT  ; 01-28, 01-29, 01-30, 01-31 based on
-        //                         ; month/year
-        // FULL-TIME       = PARTIAL-TIME TIME-OFFSET
-        // PARTIAL-TIME    = TIME-HOUR ":" TIME-MINUTE ":" TIME-SECOND
-        //                 [TIME-SECFRAC]
-        // TIME-HOUR       = 2DIGIT  ; 00-23
-        // TIME-MINUTE     = 2DIGIT  ; 00-59
-        // TIME-SECOND     = 2DIGIT  ; 00-59
-        // TIME-SECFRAC    = "." 1*6DIGIT
-        // TIME-OFFSET     = "Z" / TIME-NUMOFFSET
-        // TIME-NUMOFFSET  = ("+" / "-") TIME-HOUR ":" TIME-MINUTE
         let use_z = false;
         let time = Local::now().to_rfc3339_opts(SecondsFormat::Micros, use_z);
 
