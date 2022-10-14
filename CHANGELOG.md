@@ -2,6 +2,10 @@
 
 # [Unreleased]
 
+* Charged: Replaced `time` dep with `chrono`
+* Changed: Replaced panics with `log::error`
+* Changed: Use local time instead of UTC, doh!
+
 # [0.4.1] - 2022-01-23
 
 * Added lints to the clippy script to avoid submitting debug code in future.
