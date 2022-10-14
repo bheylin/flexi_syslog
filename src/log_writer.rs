@@ -326,7 +326,7 @@ impl<T: fmt::Display> syslog::LogFormat<T> for Formatter5424 {
         // TIME-SECFRAC    = "." 1*6DIGIT
         // TIME-OFFSET     = "Z" / TIME-NUMOFFSET
         // TIME-NUMOFFSET  = ("+" / "-") TIME-HOUR ":" TIME-MINUTE
-        let use_z = true;
+        let use_z = false;
         let time = Local::now().to_rfc3339_opts(SecondsFormat::Micros, use_z);
 
         write!(
