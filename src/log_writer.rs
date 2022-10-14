@@ -78,21 +78,25 @@ impl fmt::Debug for Builder {
 }
 
 impl Builder {
+    #[must_use]
     pub fn format(mut self, format_fn: FormatFunction) -> Self {
         self.format_fn = format_fn;
         self
     }
 
+    #[must_use]
     pub fn level_to_severity(mut self, level_to_severity: LevelToSeverity) -> Self {
         self.level_to_severity = level_to_severity;
         self
     }
 
+    #[must_use]
     pub fn max_bytes(mut self, max_bytes: impl Into<Option<usize>>) -> Self {
         self.max_bytes = max_bytes.into();
         self
     }
 
+    #[must_use]
     pub fn max_log_level(mut self, max_log_level: log::LevelFilter) -> Self {
         self.max_log_level = max_log_level;
         self
