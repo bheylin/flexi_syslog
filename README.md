@@ -4,12 +4,12 @@ Flexi-Syslog
 [<img alt="crates.io" src="https://img.shields.io/crates/v/flexi-syslog.svg?style=for-the-badge&color=fc8d62&logo=rust" height="20">](https://crates.io/crates/flexi-syslog)
 [<img alt="docs.rs" src="https://img.shields.io/badge/docs.rs-flexi-syslog?style=for-the-badge&labelColor=555555&logoColor=white&logo=data:image/svg+xml;base64" height="20">](https://docs.rs/flexi-syslog)
 
-A [flexi-logger](https://docs.rs/flexi_logger/0.22.0/flexi_logger/) [LogWriter](https://docs.rs/flexi_logger/0.22.0/flexi_logger/writers/trait.LogWriter.html) that formats and transports log records to the syslog using the [syslog](https://docs.rs/syslog/6.0.1/syslog/index.html) crate.
+A [flexi-logger](https://docs.rs/flexi_logger/latest/flexi_logger/) [LogWriter](https://docs.rs/flexi_logger/latest/flexi_logger/writers/trait.LogWriter.html) that formats and transports log records to the syslog using the [syslog](https://docs.rs/syslog/6.0.1/syslog/index.html) crate.
 
 ```toml
 [dependencies]
-flexi_logger = "0.22"
-flexi_syslog = "0.2"
+flexi_logger = "0.24"
+flexi_syslog = "0.5"
 syslog = "6.0"
 ```
 

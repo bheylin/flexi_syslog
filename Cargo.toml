@@ -1,10 +1,10 @@
 [package]
 name = "flexi_syslog"
-version = "0.4.1"
+version = "0.5.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-repository = "https://github.com/ObsceneGiraffe/flexi_syslog"
+repository = "https://github.com/bheylin/flexi_syslog"
 documentation = "https://docs.rs/flexi_syslog"
 homepage = "https://crates.io/crates/flexi_syslog"
 description = "A syslog writer for flexi_logger"

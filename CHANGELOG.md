@@ -2,6 +2,8 @@
 
 # [Unreleased]
 
+# [0.5.1] - 2022-10-14
+
 * Charged: Replaced `time` dep with `chrono`
 * Changed: Replaced panics with `log::error`
 * Changed: Use local time instead of UTC, doh!
