@@ -2,10 +2,12 @@
 
 # [Unreleased]
 
+# [0.5.1] - 2022-10-14
+
 * Changed: replaced `log::error` with `eprintln`
 * Changed: improved the error messages
 
-# [0.5.1] - 2022-10-14
+# [0.5.0] - 2022-10-14
 
 * Charged: Replaced `time` dep with `chrono`
 * Changed: Replaced panics with `log::error`
