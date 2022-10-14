@@ -154,48 +154,51 @@ where
 
         let severity = (self.level_to_severity)(record.level());
 
-        buffer_with(|tl_bytes| match tl_bytes.try_borrow_mut() {
-            Ok(mut bytes) => {
-                bytes.clear();
-
-                let result = if let Some(max_bytes) = self.max_bytes {
-                    let mut byte_writer = MaxByteWriter::new(&mut *bytes, max_bytes);
-                    (self.format_fn)(&mut byte_writer, now, record)
-                } else {
-                    (self.format_fn)(&mut *bytes, now, record)
-                };
-
-                if let Err(e) = result {
-                    log::error!("Failed to format flexi_logger::Record; {e}");
+        buffer_with(|tl_bytes| {
+            let mut bytes = match tl_bytes.try_borrow_mut() {
+                Ok(b) => b,
+                Err(e) => {
+                    log::error!("{e}");
                     return;
                 }
+            };
 
-                let s = if let Ok(s) = str::from_utf8(&*bytes) {
-                    s
-                } else {
-                    log::error!("Failed to convert message bytes into valid str");
-                    return;
-                };
+            bytes.clear();
 
-                let mut backend = if let Ok(l) = self.backend.lock() {
-                    l
-                } else {
-                    log::error!("Failed to lock syslog backend Mutex");
-                    return;
-                };
+            let result = if let Some(max_bytes) = self.max_bytes {
+                let mut byte_writer = MaxByteWriter::new(&mut *bytes, max_bytes);
+                (self.format_fn)(&mut byte_writer, now, record)
+            } else {
+                (self.format_fn)(&mut *bytes, now, record)
+            };
 
-                let result = self.formatter.format(&mut *backend, severity, s);
-
-                if let Err(e) = result {
-                    log::error!("Failed to format message; {e}");
-                    return;
-                }
-
-                bytes.clear();
+            if let Err(e) = result {
+                log::error!("Failed to format flexi_logger::Record; {e}");
+                return;
             }
-            Err(e) => {
-                log::error!("{e}");
+
+            let s = if let Ok(s) = str::from_utf8(&*bytes) {
+                s
+            } else {
+                log::error!("Failed to convert message bytes into valid str");
+                return;
+            };
+
+            let mut backend = if let Ok(l) = self.backend.lock() {
+                l
+            } else {
+                log::error!("Failed to lock syslog backend Mutex");
+                return;
+            };
+
+            let result = self.formatter.format(&mut *backend, severity, s);
+
+            if let Err(e) = result {
+                log::error!("Failed to format message; {e}");
+                return;
             }
+
+            bytes.clear();
         });
 
         Ok(())
