@@ -2,6 +2,11 @@
 
 # [Unreleased]
 
+# [0.5.2] - 2022-10-14
+
+* Upgrade deps
+* Fix clippy
+
 # [0.5.1] - 2022-10-14
 
 * Changed: replaced `log::error` with `eprintln`
