@@ -177,7 +177,7 @@ where
                 return;
             }
 
-            let s = match str::from_utf8(&*bytes) {
+            let s = match str::from_utf8(&bytes) {
                 Ok(s) => s,
                 Err(e) => {
                     eprintln!("Failed to convert message bytes into valid str; error: {e}");
