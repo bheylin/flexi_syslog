@@ -12,8 +12,8 @@ keywords = ["logger", "logging", "syslog", "flexi-logger"]
 categories = ["development-tools::debugging"]
 
 [dependencies]
-chrono = "0.4.22"
-flexi_logger = { version = "0.24", default_features = false }
+chrono = "0.4.23"
+flexi_logger = { version = "0.25", default-features = false }
 log = { version = "0.4", features = ["std"] }
 syslog = { version = "6.0" }
 
