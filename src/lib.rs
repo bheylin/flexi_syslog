@@ -5,9 +5,9 @@ use core::cell::RefCell;
 use std::io;
 
 use flexi_logger::{DeferredNow, Record};
-use syslog::Severity;
+use syslog_fmt::Severity;
 
-pub use log_writer::{Formatter5424, LogWriter};
+pub use log_writer::LogWriter;
 
 /// Signature for a custom mapping function that maps the rust log levels to
 /// values of the syslog Severity.
@@ -36,21 +36,11 @@ pub fn default_format(
 /// A default mapping from [log::Level] to [Severity]
 pub fn default_level_mapping(level: log::Level) -> Severity {
     match level {
-        log::Level::Error => Severity::LOG_ERR,
-        log::Level::Warn => Severity::LOG_WARNING,
-        log::Level::Info => Severity::LOG_INFO,
-        log::Level::Debug | log::Level::Trace => Severity::LOG_DEBUG,
+        log::Level::Error => Severity::Err,
+        log::Level::Warn => Severity::Warning,
+        log::Level::Info => Severity::Info,
+        log::Level::Debug | log::Level::Trace => Severity::Debug,
     }
-}
-
-/// Return the executable name.
-pub fn exe_name_from_env() -> io::Result<String> {
-    std::env::current_exe()?
-        .file_name()
-        .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "exe path has no filename"))?
-        .to_str()
-        .map(String::from)
-        .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "exe name is not valid UTF8"))
 }
 
 // Thread-local buffer

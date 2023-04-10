@@ -15,7 +15,8 @@ categories = ["development-tools::debugging"]
 chrono = "0.4.23"
 flexi_logger = { version = "0.25", default-features = false }
 log = { version = "0.4", features = ["std"] }
-syslog = { version = "6.0" }
+syslog_net = { path = "../syslog-suite/syslog-net", package = "syslog_net" }
+syslog_fmt = { path = "../syslog-suite/syslog-fmt", package = "syslog_fmt" }
 
 [dev-dependencies]
 anyhow = { version = "1.0" }

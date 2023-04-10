@@ -12,7 +12,7 @@ A [flexi-logger](https://docs.rs/flexi_logger/latest/flexi_logger/) [LogWriter](
 [dependencies]
 flexi_logger = "0.24"
 flexi_syslog = "0.5"
-syslog = "6.0"
+syslog_net = "0.1"
 ```
 
 # Example Usage
