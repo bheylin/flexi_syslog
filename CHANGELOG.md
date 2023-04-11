@@ -2,6 +2,10 @@
 
 # [Unreleased]
 
+- Added strict clippy config
+- Added Github workflow
+- Added `cargo deny` config
+
 # [0.5.2] - 2022-10-14
 
 * Upgrade deps
