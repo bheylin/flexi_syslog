@@ -1,14 +1,4 @@
 //! A flexi-logger LogWriter that formats and transports log records to the syslog using the syslog crate.
-#![allow(rustdoc::private_intra_doc_links)]
-#![deny(future_incompatible)]
-#![deny(missing_debug_implementations)]
-#![deny(nonstandard_style)]
-#![deny(rust_2021_compatibility)]
-#![deny(rustdoc::broken_intra_doc_links)]
-#![deny(unsafe_code)]
-#![deny(unused)]
-#![deny(warnings)]
-
 pub mod log_writer;
 
 use core::cell::RefCell;
@@ -28,7 +18,7 @@ pub type LevelToSeverity = fn(level: log::Level) -> Severity;
 pub fn default_format(
     w: &mut dyn io::Write,
     _now: &mut DeferredNow,
-    record: &Record,
+    record: &Record<'_>,
 ) -> Result<(), io::Error> {
     write!(
         w,

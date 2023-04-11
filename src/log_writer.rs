@@ -149,7 +149,7 @@ impl<Backend> flexi_logger::writers::LogWriter for LogWriter<Backend>
 where
     Backend: io::Write + Send + Sync,
 {
-    fn write(&self, now: &mut DeferredNow, record: &Record) -> io::Result<()> {
+    fn write(&self, now: &mut DeferredNow, record: &Record<'_>) -> io::Result<()> {
         use syslog::LogFormat;
 
         let severity = (self.level_to_severity)(record.level());
@@ -325,7 +325,7 @@ mod max_byte_writer {
         const MAX_BYTES: usize = 10;
         let input = "this is the end";
         let mut output: [u8; MAX_BYTES] = [101; MAX_BYTES];
-        let mut w = MaxByteWriter::new(&mut output as &mut [u8], MAX_BYTES);
+        let mut w = MaxByteWriter::new(output.as_mut_slice(), MAX_BYTES);
         let bytes_written = w.write(input.as_bytes()).unwrap();
 
         assert_eq!(bytes_written, 15);
@@ -337,7 +337,7 @@ mod max_byte_writer {
         const MAX_BYTES: usize = 10;
         let input = "this is the end";
         let mut output: [u8; MAX_BYTES] = [101; MAX_BYTES];
-        let mut w = MaxByteWriter::new(&mut output as &mut [u8], MAX_BYTES);
+        let mut w = MaxByteWriter::new(output.as_mut_slice(), MAX_BYTES);
 
         let bytes = input.as_bytes();
         let chunk_a = &bytes[..=4];
@@ -359,7 +359,7 @@ mod max_byte_writer {
         const MAX_BYTES: usize = 20;
         let input = "this is the end";
         let mut output: [u8; MAX_BYTES] = [101; MAX_BYTES];
-        let mut w = MaxByteWriter::new(&mut output as &mut [u8], MAX_BYTES);
+        let mut w = MaxByteWriter::new(output.as_mut_slice(), MAX_BYTES);
         let bytes_written = w.write(input.as_bytes()).unwrap();
 
         assert_eq!(bytes_written, 15);
@@ -380,7 +380,7 @@ mod max_byte_writer {
         const MAX_BYTES: usize = 20;
         let input = "this is the end";
         let mut output: [u8; MAX_BYTES] = [101; MAX_BYTES];
-        let mut w = MaxByteWriter::new(&mut output as &mut [u8], MAX_BYTES);
+        let mut w = MaxByteWriter::new(output.as_mut_slice(), MAX_BYTES);
 
         let bytes = input.as_bytes();
         let chunk_a = &bytes[..=4];
@@ -411,7 +411,7 @@ mod max_byte_writer {
         const MAX_BYTES: usize = 10;
         let input = "";
         let mut output: [u8; MAX_BYTES] = [101; MAX_BYTES];
-        let mut w = MaxByteWriter::new(&mut output as &mut [u8], MAX_BYTES);
+        let mut w = MaxByteWriter::new(output.as_mut_slice(), MAX_BYTES);
         let bytes_written = w.write(input.as_bytes()).unwrap();
         assert_eq!(bytes_written, 0);
     }
