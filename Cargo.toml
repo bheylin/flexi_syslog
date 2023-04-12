@@ -12,11 +12,15 @@ keywords = ["logger", "logging", "syslog", "flexi-logger"]
 categories = ["development-tools::debugging"]
 
 [dependencies]
-chrono = "0.4.23"
 flexi_logger = { version = "0.25", default-features = false }
 log = { version = "0.4", features = ["std"] }
 syslog_net = { path = "../syslog-suite/syslog-net", package = "syslog_net" }
 syslog_fmt = { path = "../syslog-suite/syslog-fmt", package = "syslog_fmt" }
+parking_lot = "0.12.1"
+arrayvec = "0.7.2"
 
 [dev-dependencies]
 anyhow = { version = "1.0" }
+assert_matches = "1.5.0"
+env_logger = "0.10.0"
+rand = "0.8.5"

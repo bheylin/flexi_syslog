@@ -1,10 +1,6 @@
 //! A flexi-logger LogWriter that formats and transports log records to the syslog using the syslog crate.
 pub mod log_writer;
 
-use core::cell::RefCell;
-use std::io;
-
-use flexi_logger::{DeferredNow, Record};
 use syslog_fmt::Severity;
 
 pub use log_writer::LogWriter;
@@ -12,26 +8,6 @@ pub use log_writer::LogWriter;
 /// Signature for a custom mapping function that maps the rust log levels to
 /// values of the syslog Severity.
 pub type LevelToSeverity = fn(level: log::Level) -> Severity;
-
-/// A default formatter if you don't want to think to hard about it.
-/// Format: {record.level} {record.target} l:{record.line} {record.args}
-pub fn default_format(
-    w: &mut dyn io::Write,
-    _now: &mut DeferredNow,
-    record: &Record<'_>,
-) -> Result<(), io::Error> {
-    write!(
-        w,
-        "{} {} l:{} {}",
-        record.level(),
-        record.target(),
-        record
-            .line()
-            .as_ref()
-            .map_or_else(|| "-".to_owned(), ToString::to_string),
-        record.args()
-    )
-}
 
 /// A default mapping from [log::Level] to [Severity]
 pub fn default_level_mapping(level: log::Level) -> Severity {
@@ -43,15 +19,44 @@ pub fn default_level_mapping(level: log::Level) -> Severity {
     }
 }
 
-// Thread-local buffer
-pub(crate) fn buffer_with<F>(f: F)
-where
-    F: FnOnce(&RefCell<Vec<u8>>),
-{
-    const DEFAULT_BUFFER_BYTES: usize = 2 * 1024;
+#[cfg(test)]
+mod test {
+    use std::os::unix::net::UnixDatagram;
 
-    thread_local! {
-        static BUFFER: RefCell<Vec<u8>> = RefCell::new(Vec::with_capacity(DEFAULT_BUFFER_BYTES));
+    #[test]
+    fn should_log() {
+        let (tx, rx) = UnixDatagram::pair().unwrap();
+
+        let formatter = syslog_fmt::v5424::Formatter::new(
+            syslog_fmt::Facility::User,
+            "app.domain.com",
+            "app_test",
+            None,
+        );
+
+        let syslog_writer = crate::LogWriter::<1024>::new(
+            formatter,
+            tx.into(),
+            log::LevelFilter::Info,
+            crate::default_level_mapping,
+        );
+
+        let logger = flexi_logger::Logger::try_with_str("info")
+            .expect("Failed to init logger")
+            .log_to_writer(Box::new(syslog_writer));
+
+        let handle = logger.start().unwrap();
+
+        log::info!("Info gets through");
+        log::trace!("Trace is filtered");
+
+        handle.flush();
+
+        let mut buf = vec![0u8; 128];
+        let bytes_received = rx.recv(&mut buf).unwrap();
+        buf.truncate(bytes_received);
+        let s = String::from_utf8(buf).unwrap();
+        assert!(s.ends_with("Info gets through"));
+        assert!(bytes_received > 0);
     }
-    BUFFER.with(f);
 }

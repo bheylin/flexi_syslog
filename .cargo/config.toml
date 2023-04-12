@@ -50,7 +50,6 @@ rustflags = [
     "-Wclippy::macro_use_imports",
     "-Wclippy::manual_ok_or",
     "-Wclippy::map_err_ignore",
-    "-Wclippy::map_unwrap_or",
     "-Wclippy::match_on_vec_items",
     "-Wclippy::match_same_arms",
     "-Wclippy::match_wild_err_arm",

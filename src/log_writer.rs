@@ -1,39 +1,53 @@
 //! The LogWriter that adapts flexi-logger log records to the syslog.
-use std::{
-    fmt, io, str,
-    sync::{Arc, Mutex},
-};
+use std::{fmt, io, sync::Arc};
 
-use flexi_logger::{DeferredNow, FormatFunction, Record};
+use arrayvec::ArrayVec;
+use flexi_logger::{DeferredNow, Record};
+use parking_lot::Mutex;
 use syslog_fmt::v5424;
+use syslog_net::Transport;
 
-use crate::{buffer_with, LevelToSeverity};
+use crate::LevelToSeverity;
 
-/// Writes [records](flexi_logger::Record) to the given syslog [backend](syslog::LoggerBackend).
+/// Writes [records](flexi_logger::Record) to the syslog through one of the available [transports](syslog_net::Transport).
 ///
 /// Each record is formatted into a user message using the format_fn.
-/// The user message is then [foratted](syslog::Formatter3164) into an [rfc3164](https://datatracker.ietf.org/doc/html/rfc3164) string
-/// and sent to syslog through the backend writer.
-pub struct LogWriter<Backend>
-where
-    Backend: io::Write + Send + Sync,
-{
-    /// backend for sending syslog messages
-    pub backend: Arc<Mutex<Backend>>,
-    /// Fn to format a single [Record] into the message section of a syslog entry.
-    pub format_fn: FormatFunction,
+/// The user message is then [foratted](syslog::Formatter5424) into an [rfc3164](https://datatracker.ietf.org/doc/html/rfc5424) string
+/// and sent to syslog through the transport.
+pub struct LogWriter<const CAP: usize> {
     /// Formats the syslog entry including metadata and user message
-    pub formatter: v5424::Formatter,
-    /// Fn that maps [log::Level] to [crate::Severity].
-    pub level_to_severity: LevelToSeverity,
+    formatter: v5424::Formatter,
+    /// transport for sending syslog messages
+    buffered_transport: Arc<Mutex<BufferedTransport<CAP>>>,
     /// The maximum log level to allow through to syslog.
-    pub max_log_level: log::LevelFilter,
+    max_log_level: log::LevelFilter,
+    /// Fn that maps [log::Level] to [crate::Severity].
+    level_to_severity: LevelToSeverity,
 }
 
-impl<Backend> fmt::Debug for LogWriter<Backend>
-where
-    Backend: io::Write + Send + Sync,
-{
+struct BufferedTransport<const CAP: usize> {
+    buf: ArrayVec<u8, CAP>,
+    transport: Transport,
+}
+
+impl<const CAP: usize> LogWriter<CAP> {
+    pub fn new(
+        formatter: v5424::Formatter,
+        transport: Transport,
+        max_log_level: log::LevelFilter,
+        level_to_severity: LevelToSeverity,
+    ) -> LogWriter<CAP> {
+        let buf = ArrayVec::<_, CAP>::new();
+        Self {
+            formatter,
+            buffered_transport: Arc::new(Mutex::new(BufferedTransport { buf, transport })),
+            max_log_level,
+            level_to_severity,
+        }
+    }
+}
+
+impl<const CAP: usize> fmt::Debug for LogWriter<CAP> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("LogWriter")
             .field("formatter", &self.formatter)
@@ -42,65 +56,26 @@ where
     }
 }
 
-impl<Backend> flexi_logger::writers::LogWriter for LogWriter<Backend>
-where
-    Backend: io::Write + Send + Sync,
-{
-    fn write(&self, now: &mut DeferredNow, record: &Record<'_>) -> io::Result<()> {
+impl<const CAP: usize> flexi_logger::writers::LogWriter for LogWriter<CAP> {
+    fn write(&self, _now: &mut DeferredNow, record: &Record<'_>) -> io::Result<()> {
+        let mut buf_trans = self.buffered_transport.lock();
+        let bt = &mut *buf_trans;
         let severity = (self.level_to_severity)(record.level());
 
-        buffer_with(|tl_bytes| {
-            let mut bytes = match tl_bytes.try_borrow_mut() {
-                Ok(b) => b,
-                Err(e) => {
-                    eprintln!("{e}");
-                    return;
-                }
-            };
+        bt.buf.clear();
 
-            bytes.clear();
+        self.formatter
+            .format(&mut bt.buf, severity, record.args(), None)?;
 
-            let result = (self.format_fn)(&mut *bytes, now, record);
-
-            if let Err(e) = result {
-                eprintln!("Failed to format flexi_logger::Record; error: {e}");
-                return;
-            }
-
-            let s = match str::from_utf8(&bytes) {
-                Ok(s) => s,
-                Err(e) => {
-                    eprintln!("Failed to convert message bytes into valid str; error: {e}");
-                    return;
-                }
-            };
-
-            let mut backend = match self.backend.lock() {
-                Ok(l) => l,
-                Err(e) => {
-                    eprintln!("Failed to lock backend Mutex while trying to log message; message: {s}, error: {e}");
-                    return;
-                }
-            };
-
-            if let Err(e) = self.formatter.format(&mut *backend, severity, s) {
-                eprintln!("Failed to write message to syslog backend; {e}");
-                return;
-            }
-
-            bytes.clear();
-        });
+        bt.transport.send(&bt.buf)?;
 
         Ok(())
     }
 
     fn flush(&self) -> io::Result<()> {
-        let mut backend = self
-            .backend
-            .lock()
-            .expect("Failed to lock syslog backend Mutex");
+        let mut buf_trans = self.buffered_transport.lock();
 
-        backend.flush()
+        buf_trans.transport.flush()
     }
 
     fn max_log_level(&self) -> log::LevelFilter {
