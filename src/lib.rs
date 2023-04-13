@@ -1,9 +1,9 @@
 //! A flexi-logger LogWriter that formats and transports log records to the syslog using the syslog crate.
-pub mod log_writer;
+mod log_writer;
 
 use syslog_fmt::Severity;
 
-pub use log_writer::LogWriter;
+pub use log_writer::{FullBufferErrorStrategy, LogWriter};
 
 /// Signature for a custom mapping function that maps the rust log levels to
 /// values of the syslog Severity.
@@ -23,6 +23,8 @@ pub fn default_level_mapping(level: log::Level) -> Severity {
 mod test {
     use std::os::unix::net::UnixDatagram;
 
+    use crate::FullBufferErrorStrategy;
+
     #[test]
     fn should_log() {
         let (tx, rx) = UnixDatagram::pair().unwrap();
@@ -39,6 +41,7 @@ mod test {
             tx.into(),
             log::LevelFilter::Info,
             crate::default_level_mapping,
+            FullBufferErrorStrategy::Ignore,
         );
 
         let logger = flexi_logger::Logger::try_with_str("info")

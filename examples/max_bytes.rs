@@ -1,3 +1,5 @@
+use flexi_syslog::FullBufferErrorStrategy;
+
 fn main() {
     let formatter = syslog_fmt::v5424::Formatter::new(
         syslog_fmt::Facility::User,
@@ -13,6 +15,7 @@ fn main() {
         socket.into(),
         log::LevelFilter::Info,
         flexi_syslog::default_level_mapping,
+        FullBufferErrorStrategy::Ignore,
     );
 
     let logger = flexi_logger::Logger::try_with_str("info")

@@ -1,5 +1,9 @@
 //! The LogWriter that adapts flexi-logger log records to the syslog.
-use std::{fmt, io, sync::Arc};
+use std::{
+    fmt,
+    io::{self, ErrorKind},
+    sync::Arc,
+};
 
 use arrayvec::ArrayVec;
 use flexi_logger::{DeferredNow, Record};
@@ -8,6 +12,12 @@ use syslog_fmt::v5424;
 use syslog_net::Transport;
 
 use crate::LevelToSeverity;
+
+#[derive(Copy, Clone, Eq, PartialEq)]
+pub enum FullBufferErrorStrategy {
+    Ignore,
+    Fail,
+}
 
 /// Writes [records](flexi_logger::Record) to the syslog through one of the available [transports](syslog_net::Transport).
 ///
@@ -23,6 +33,9 @@ pub struct LogWriter<const CAP: usize> {
     max_log_level: log::LevelFilter,
     /// Fn that maps [log::Level] to [crate::Severity].
     level_to_severity: LevelToSeverity,
+    /// How should a full buffer error be handled?
+    /// Ignoring the error will truncate the message to the len of the buffer.
+    full_buffer_error_strategy: FullBufferErrorStrategy,
 }
 
 struct BufferedTransport<const CAP: usize> {
@@ -36,6 +49,7 @@ impl<const CAP: usize> LogWriter<CAP> {
         transport: Transport,
         max_log_level: log::LevelFilter,
         level_to_severity: LevelToSeverity,
+        full_buffer_error_strategy: FullBufferErrorStrategy,
     ) -> LogWriter<CAP> {
         let buf = ArrayVec::<_, CAP>::new();
         Self {
@@ -43,6 +57,7 @@ impl<const CAP: usize> LogWriter<CAP> {
             buffered_transport: Arc::new(Mutex::new(BufferedTransport { buf, transport })),
             max_log_level,
             level_to_severity,
+            full_buffer_error_strategy,
         }
     }
 }
@@ -64,8 +79,18 @@ impl<const CAP: usize> flexi_logger::writers::LogWriter for LogWriter<CAP> {
 
         bt.buf.clear();
 
-        self.formatter
-            .format(&mut bt.buf, severity, record.args(), None)?;
+        let res = self
+            .formatter
+            .format(&mut bt.buf, severity, record.args(), None);
+
+        if let Err(e) = res {
+            if e.kind() != ErrorKind::WriteZero {
+                match self.full_buffer_error_strategy {
+                    FullBufferErrorStrategy::Ignore => (),
+                    FullBufferErrorStrategy::Fail => return Err(e),
+                }
+            }
+        }
 
         bt.transport.send(&bt.buf)?;
 
