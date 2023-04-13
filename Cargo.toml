@@ -19,8 +19,10 @@ parking_lot = "0.12.1"
 syslog_fmt = { path = "../syslog-suite/syslog-fmt", package = "syslog_fmt" }
 syslog_net = { path = "../syslog-suite/syslog-net", package = "syslog_net" }
 
-[dev-dependencies]
-anyhow = { version = "1.0" }
-assert_matches = "1.5.0"
-env_logger = "0.10.0"
-rand = "0.8.5"
+[[test]]
+name = "should_handle_socket_shutdown"
+harness = false
+
+[[test]]
+name = "should_filter_log_entries"
+harness = false

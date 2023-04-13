@@ -19,6 +19,12 @@ pub enum FullBufferErrorStrategy {
     Fail,
 }
 
+#[derive(Copy, Clone, Eq, PartialEq)]
+pub enum BrokenPipeErrorStrategy {
+    Ignore,
+    Fail,
+}
+
 /// Writes [records](flexi_logger::Record) to the syslog through one of the available [transports](syslog_net::Transport).
 ///
 /// Each record is formatted into a user message using the format_fn.
@@ -36,6 +42,8 @@ pub struct LogWriter<const CAP: usize> {
     /// How should a full buffer error be handled?
     /// Ignoring the error will truncate the message to the len of the buffer.
     full_buffer_error_strategy: FullBufferErrorStrategy,
+    /// How should a broken pipe be handled
+    broken_strategy_error_strategy: BrokenPipeErrorStrategy,
 }
 
 struct BufferedTransport<const CAP: usize> {
@@ -50,6 +58,7 @@ impl<const CAP: usize> LogWriter<CAP> {
         max_log_level: log::LevelFilter,
         level_to_severity: LevelToSeverity,
         full_buffer_error_strategy: FullBufferErrorStrategy,
+        broken_strategy_error_strategy: BrokenPipeErrorStrategy,
     ) -> LogWriter<CAP> {
         let buf = ArrayVec::<_, CAP>::new();
         Self {
@@ -58,6 +67,7 @@ impl<const CAP: usize> LogWriter<CAP> {
             max_log_level,
             level_to_severity,
             full_buffer_error_strategy,
+            broken_strategy_error_strategy,
         }
     }
 }
@@ -92,7 +102,14 @@ impl<const CAP: usize> flexi_logger::writers::LogWriter for LogWriter<CAP> {
             }
         }
 
-        bt.transport.send(&bt.buf)?;
+        if let Err(e) = bt.transport.send(&bt.buf) {
+            if e.kind() != ErrorKind::BrokenPipe {
+                match self.broken_strategy_error_strategy {
+                    BrokenPipeErrorStrategy::Ignore => (),
+                    BrokenPipeErrorStrategy::Fail => return Err(e),
+                }
+            }
+        };
 
         Ok(())
     }
