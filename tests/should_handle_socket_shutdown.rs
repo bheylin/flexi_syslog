@@ -1,53 +1,49 @@
-use std::{net, os::unix::net::UnixDatagram};
+mod test;
 
-use flexi_logger::LoggerHandle;
+use std::{io, os::unix::net::UnixDatagram};
 
-use flexi_syslog::{BrokenPipeErrorStrategy, FullBufferErrorStrategy};
-
+#[allow(unsafe_code)]
 fn main() {
-    let (tx, rx) = UnixDatagram::pair().unwrap();
-    let logger_handle = setup_log_writer(
-        tx.try_clone()
-            .expect("A clone is used to shutdown the connection"),
-    );
+    let socket_path = test::socket_path();
 
-    log::info!("Info gets through");
-    log::info!("Second info gets through");
+    // setup a socket that represents the receiving syslog daemon
+    let rx = UnixDatagram::bind(&socket_path).unwrap();
+    rx.set_nonblocking(true).unwrap();
+
+    // setup a socket to transmit data to the syslog daemon
+    let tx = UnixDatagram::unbound().unwrap();
+    tx.connect(&socket_path).unwrap();
+
+    let logger_handle = test::setup_log_writer(tx.try_clone().unwrap());
+
+    let first_message = "Info gets through";
+    let second_message = "Second info gets through";
+    log::info!("{first_message}");
+    log::info!("{second_message}");
 
     logger_handle.flush();
-    tx.shutdown(net::Shutdown::Both).unwrap();
 
-    log::info!("Log to a shutdown socket does not get through (BrokenPipe)");
+    assert!(test::recv_str(&rx).unwrap().ends_with(first_message));
+    assert!(test::recv_str(&rx).unwrap().ends_with(second_message));
 
-    log::info!("Second info gets through");
-    // let mut buf = vec![0u8; 128];
-    // let bytes_received = rx.recv(&mut buf).unwrap();
-    // buf.truncate(bytes_received);
-    // let s = String::from_utf8(buf).unwrap();
-    // assert!(s.ends_with("Info gets through"));
-    // assert!(bytes_received > 0);
-}
+    drop(rx);
+    std::fs::remove_file(&socket_path).unwrap();
 
-fn setup_log_writer(tx: UnixDatagram) -> LoggerHandle {
-    let formatter = syslog_fmt::v5424::Formatter::new(
-        syslog_fmt::Facility::User,
-        "app.domain.com",
-        "app_test",
-        None,
+    log::info!("Third info is lost due to shudown socket (BrokenPipe)");
+    logger_handle.flush();
+
+    let rx = UnixDatagram::bind(&socket_path).unwrap();
+    rx.set_nonblocking(true).unwrap();
+
+    println!("rx reconnected");
+    assert_eq!(
+        test::recv_str(&rx).unwrap_err().kind(),
+        io::ErrorKind::WouldBlock,
+        "Socket is set to non-blocking, it will Err instead of blocking"
     );
 
-    let syslog_writer = flexi_syslog::LogWriter::<1024>::new(
-        formatter,
-        tx.into(),
-        log::LevelFilter::Info,
-        flexi_syslog::default_level_mapping,
-        FullBufferErrorStrategy::Ignore,
-        BrokenPipeErrorStrategy::Ignore,
-    );
+    let forth_message = "Forth info gets through, after socket reconnection";
+    log::info!("{forth_message}");
 
-    let logger = flexi_logger::Logger::try_with_str("info")
-        .expect("Failed to init logger")
-        .log_to_writer(Box::new(syslog_writer));
-
-    logger.start().unwrap()
+    assert!(test::recv_str(&rx).unwrap().ends_with(forth_message));
 }

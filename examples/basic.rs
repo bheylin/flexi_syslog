@@ -1,4 +1,6 @@
-use flexi_syslog::{BrokenPipeErrorStrategy, FullBufferErrorStrategy};
+use syslog_net::reconnect;
+
+use flexi_syslog::BufferWriteErrorStrategy;
 
 fn main() {
     let formatter = syslog_fmt::v5424::Formatter::new(
@@ -9,14 +11,15 @@ fn main() {
     );
 
     let socket = syslog_net::unix::any_recommended_socket().expect("Failed to init unix socket");
+    let transport = socket.try_into().unwrap();
 
-    let syslog_writer = flexi_syslog::LogWriter::<1024>::new(
+    let syslog_writer = flexi_syslog::LogWriter::<1024, _>::new(
         formatter,
-        socket.into(),
+        transport,
+        reconnect::AcquireSame::new(),
         log::LevelFilter::Info,
         flexi_syslog::default_level_mapping,
-        FullBufferErrorStrategy::Ignore,
-        BrokenPipeErrorStrategy::Ignore,
+        BufferWriteErrorStrategy::Ignore,
     );
 
     let logger = flexi_logger::Logger::try_with_str("info")

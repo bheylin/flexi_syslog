@@ -3,7 +3,7 @@ mod log_writer;
 
 use syslog_fmt::Severity;
 
-pub use log_writer::{BrokenPipeErrorStrategy, FullBufferErrorStrategy, LogWriter};
+pub use log_writer::{BufferWriteErrorStrategy, LogWriter};
 
 /// Signature for a custom mapping function that maps the rust log levels to
 /// values of the syslog Severity.
