@@ -1,7 +1,8 @@
 //! A flexi-logger LogWriter that formats and transports log records to the syslog using the syslog crate.
 mod log_writer;
 
-use syslog_fmt::Severity;
+pub use syslog_fmt::{v5424, Error, Facility, Priority, Severity};
+pub use syslog_net as net;
 
 pub use log_writer::{BufferWriteErrorStrategy, LogWriter};
 

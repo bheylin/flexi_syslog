@@ -18,20 +18,27 @@ syslog_net = "0.1"
 # Example Usage
 
 ```rust
+use flexi_syslog::{default_level_mapping, net, v5424, BufferWriteErrorStrategy, LogWriter};
+
 fn main() {
-    // syslog's Formatter5424 does not implement the rfc5424 timestamp correctly
-    let formatter = flexi_syslog::Formatter5424 {
-        facility: syslog::Facility::LOG_USER,
-        hostname: None,
-        process: "basic".into(),
-        pid: 0,
-    };
+    let formatter = v5424::Formatter::new(
+        syslog_fmt::Facility::User,
+        "app.domain.com",
+        "app_test",
+        None,
+    );
 
-    let sys_logger = syslog::unix(formatter).expect("Failed to init unix socket");
+    let socket = net::unix::any_recommended_socket().expect("Failed to init unix socket");
+    let transport = socket.try_into().unwrap();
 
-    let syslog_writer = flexi_syslog::log_writer::Builder::default()
-        .max_log_level(log::LevelFilter::Info)
-        .build(sys_logger);
+    let syslog_writer = LogWriter::<1024, _>::new(
+        formatter,
+        transport,
+        net::reconnect::AcquireSame::new(),
+        log::LevelFilter::Info,
+        default_level_mapping,
+        BufferWriteErrorStrategy::Ignore,
+    );
 
     let logger = flexi_logger::Logger::try_with_str("info")
         .expect("Failed to init logger")

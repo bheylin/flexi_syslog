@@ -149,9 +149,6 @@ impl<const CAP: usize, RS: ReconnectionStrategy> flexi_logger::writers::LogWrite
 
         match transport.send(&bt.buf) {
             Ok(bytes_written) => {
-                // let msg = std::str::from_utf8(&bt.buf)
-                //     .map_err(|e| io::Error::new(ErrorKind::Other, e))?;
-
                 eprintln!("Wrote bytes {bytes_written}");
             }
             Err(e) => {

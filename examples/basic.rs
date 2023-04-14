@@ -1,24 +1,22 @@
-use syslog_net::reconnect;
-
-use flexi_syslog::BufferWriteErrorStrategy;
+use flexi_syslog::{default_level_mapping, net, v5424, BufferWriteErrorStrategy, LogWriter};
 
 fn main() {
-    let formatter = syslog_fmt::v5424::Formatter::new(
+    let formatter = v5424::Formatter::new(
         syslog_fmt::Facility::User,
         "app.domain.com",
         "app_test",
         None,
     );
 
-    let socket = syslog_net::unix::any_recommended_socket().expect("Failed to init unix socket");
+    let socket = net::unix::any_recommended_socket().expect("Failed to init unix socket");
     let transport = socket.try_into().unwrap();
 
-    let syslog_writer = flexi_syslog::LogWriter::<1024, _>::new(
+    let syslog_writer = LogWriter::<1024, _>::new(
         formatter,
         transport,
-        reconnect::AcquireSame::new(),
+        net::reconnect::AcquireSame::new(),
         log::LevelFilter::Info,
-        flexi_syslog::default_level_mapping,
+        default_level_mapping,
         BufferWriteErrorStrategy::Ignore,
     );
 
