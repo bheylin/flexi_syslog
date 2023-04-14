@@ -3,7 +3,7 @@ Flexi-Syslog
 
 ![docs](https://img.shields.io/badge/docs.rs-flexi-syslog?style=for-the-badge&labelColor=555555&logoColor=white&logo=data:image/svg+xml;base64)
 ![crates](https://img.shields.io/crates/v/flexi-syslog.svg?style=for-the-badge&color=fc8d62&logo=rust)
-![build status](https://img.shields.io/github/actions/workflow/status/bheylin/flexi-syslog/ci.yml?logo=github&style=for-the-badge)
+![build status](https://img.shields.io/github/actions/workflow/status/bheylin/flexi_syslog/ci.yml?logo=github&style=for-the-badge)
 
 
 A [flexi-logger](https://docs.rs/flexi_logger/latest/flexi_logger/) [LogWriter](https://docs.rs/flexi_logger/latest/flexi_logger/writers/trait.LogWriter.html) that formats and transports log records to the syslog using the [syslog-fmt](https://docs.rs/syslog-fmt/latest/syslog-fmt) and [syslog-net](https://docs.rs/syslog-net/latest/syslog-net) crates respectively.
