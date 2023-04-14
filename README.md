@@ -10,9 +10,8 @@ A [flexi-logger](https://docs.rs/flexi_logger/latest/flexi_logger/) [LogWriter](
 
 ```toml
 [dependencies]
-flexi_logger = "0.24"
-flexi_syslog = "0.5"
-syslog_net = "0.1"
+flexi_logger = "0.25"
+flexi_syslog = "0.6"
 ```
 
 # Example Usage
