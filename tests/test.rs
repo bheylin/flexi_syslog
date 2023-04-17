@@ -3,15 +3,15 @@ use std::{io, os::unix::net::UnixDatagram};
 use flexi_logger::LoggerHandle;
 use syslog_net::reconnect;
 
-use flexi_syslog::BufferWriteErrorStrategy;
+use flexi_syslog::{v5424, BufferWriteErrorStrategy};
 
 pub fn setup_log_writer(tx: UnixDatagram) -> LoggerHandle {
-    let formatter = syslog_fmt::v5424::Formatter::new(
-        syslog_fmt::Facility::User,
-        "app.domain.com",
-        "app_test",
-        None,
-    );
+    let formatter = v5424::Formatter::new(v5424::Config {
+        facility: syslog_fmt::Facility::User,
+        hostname: Some("app.domain.com"),
+        app_name: Some("app_test"),
+        proc_id: None,
+    });
 
     let transport = tx.try_into().unwrap();
 
