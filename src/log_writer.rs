@@ -139,23 +139,58 @@ impl<const CAP: usize, RS: ReconnectionStrategy> flexi_logger::writers::LogWrite
             }
         }
 
-        if bt.transport.is_none() {
+        // A previous reconnection attempt may have failed
+        let transport = if let Some(t) = bt.transport.as_mut() {
+            t
+        } else {
             if let Err(e) = bt.try_reconnect(io::ErrorKind::Other.into()) {
                 eprintln!("Error while trying to reconnect to socket: {e}");
+                return Ok(());
             }
+
+            bt.transport
+                .as_mut()
+                .expect("Reconnect didn't fail, transport should be Some")
+        };
+
+        // send the message and return early is success
+        let err = match transport.send(&bt.buf) {
+            Ok(bytes_written) => {
+                if bytes_written == 0 {
+                    eprintln!("No bytes were written to syslog");
+                }
+                return Ok(());
+            }
+            // We ignore the WouldBlock error if the transport is set to non-blocking
+            // As this error does not mean that we need to reconnect
+            Err(e) if e.kind() == ErrorKind::WouldBlock => return Ok(()),
+            Err(e) => e,
+        };
+
+        eprintln!("Transport Error while sending message; err: {err}",);
+
+        if let Err(e) = bt.try_reconnect(io::ErrorKind::Other.into()) {
+            eprintln!("Error while trying to reconnect to socket: {e}");
+            return Ok(());
         }
 
-        let transport = bt.transport.as_mut().unwrap();
+        let transport = bt
+            .transport
+            .as_mut()
+            .expect("Reconnect didn't fail, transport should be Some");
 
+        //
         match transport.send(&bt.buf) {
             Ok(bytes_written) => {
-                eprintln!("Wrote bytes {bytes_written}");
-            }
-            Err(e) => {
-                eprintln!("Transport Error occured while sending message; err: {e}",);
-                if let Err(e) = bt.try_reconnect(e) {
-                    eprintln!("Error while trying to reconnect to socket: {e}");
+                if bytes_written == 0 {
+                    eprintln!("No bytes were written to syslog");
                 }
+            }
+            // We ignore the WouldBlock error if the transport is set to non-blocking
+            // As this error does not mean that we need to reconnect
+            Err(e) if e.kind() == ErrorKind::WouldBlock => (),
+            Err(e) => {
+                eprintln!("Transport Error while retrying message send; err: {e}",);
             }
         }
 
