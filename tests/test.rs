@@ -6,7 +6,7 @@ use syslog_net::reconnect;
 use flexi_syslog::{v5424, BufferWriteErrorStrategy};
 
 pub fn setup_log_writer(tx: UnixDatagram) -> LoggerHandle {
-    let formatter = v5424::Formatter::new(v5424::Config {
+    let formatter = v5424::Formatter::from_config(v5424::Config {
         facility: syslog_fmt::Facility::User,
         hostname: Some("app.domain.com"),
         app_name: Some("app_test"),

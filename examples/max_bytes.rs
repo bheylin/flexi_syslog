@@ -3,7 +3,7 @@ use flexi_syslog::{default_level_mapping, net, v5424, BufferWriteErrorStrategy, 
 fn main() {
     const BUFFER_SIZE: usize = 1024;
 
-    let formatter = v5424::Formatter::new(v5424::Config {
+    let formatter = v5424::Formatter::from_config(v5424::Config {
         facility: syslog_fmt::Facility::User,
         hostname: Some("app.domain.com"),
         app_name: Some("app_test"),
