@@ -22,6 +22,10 @@ syslog_net = { path = "../syslog-suite/syslog-net", package = "syslog_net" }
 [dev-dependencies]
 rand = "0.8.5"
 
+[[bin]]
+name = "periodic_logger"
+path = "src/bin/periodic_logger.rs"
+
 [[test]]
 name = "should_handle_socket_shutdown"
 harness = false
