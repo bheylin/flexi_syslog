@@ -1,10 +1,16 @@
 Flexi-Syslog
 ============
 
-![docs](https://img.shields.io/badge/docs.rs-flexi-syslog?style=for-the-badge&labelColor=555555&logoColor=white&logo=data:image/svg+xml;base64)
-![crates](https://img.shields.io/crates/v/flexi-syslog.svg?style=for-the-badge&color=fc8d62&logo=rust)
-![build status](https://img.shields.io/github/actions/workflow/status/bheylin/syslog-suite/ci.yml?logo=github&style=for-the-badge)
+[![docs][docs-badge]][docs-url]
+[![crates][crates-badge]][crates-url]
+[![build status][actions-badge]][actions-url]
 
+[docs-badge]: https://img.shields.io/docsrs/flexi_syslog
+[docs-url]: https://docs.rs/flexi_logger/latest/flexi_logger
+[crates-badge]: https://img.shields.io/crates/v/flexi_syslog
+[crates-url]: https://crates.io/crates/flexi_logger
+[actions-badge]: https://github.com/bheylin/flexi_syslog/workflows/CI/badge.svg
+[actions-url]: https://github.com/bheylin/flexi_syslog/actions?query=workflow%3ACI+branch%3Amain
 
 A [flexi-logger](https://docs.rs/flexi_logger/latest/flexi_logger/) [LogWriter](https://docs.rs/flexi_logger/latest/flexi_logger/writers/trait.LogWriter.html) that formats and transports log records to the syslog using the [syslog](https://docs.rs/syslog/6.0.1/syslog/index.html) crate.
 
