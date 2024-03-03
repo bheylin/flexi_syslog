@@ -6,9 +6,9 @@ Flexi-Syslog
 [![build status][actions-badge]][actions-url]
 
 [docs-badge]: https://img.shields.io/docsrs/flexi_syslog
-[docs-url]: https://docs.rs/flexi_logger/latest/flexi_logger
+[docs-url]: https://docs.rs/flexi_syslog/latest/flexi_syslog
 [crates-badge]: https://img.shields.io/crates/v/flexi_syslog
-[crates-url]: https://crates.io/crates/flexi_logger
+[crates-url]: https://crates.io/crates/flexi_syslog
 [actions-badge]: https://github.com/bheylin/flexi_syslog/workflows/CI/badge.svg
 [actions-url]: https://github.com/bheylin/flexi_syslog/actions?query=workflow%3ACI+branch%3Amain
 
